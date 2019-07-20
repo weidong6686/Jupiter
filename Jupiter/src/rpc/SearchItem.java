@@ -3,6 +3,7 @@ package rpc;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -38,6 +39,9 @@ public class SearchItem extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+		
+		String userId = request.getParameter("user_id");
+		
 		double lat = Double.parseDouble(request.getParameter("lat"));
 		double lon = Double.parseDouble(request.getParameter("lon"));
 		// Term can be empty or null.
@@ -45,13 +49,20 @@ public class SearchItem extends HttpServlet {
 
 		DBConnection connection = DBConnectionFactory.getConnection();
 		List<Item> items = connection.searchItems(lat, lon, term);
- 		connection.close();
+		//favorite °´ÕÕ userId Keyµ÷³ö;
+		Set<String> favorite = connection.getFavoriteItemIds(userId);
+		connection.close();
 
 		List<JSONObject> list = new ArrayList<>();
 		try {
 			for (Item item : items) {
 				// Add a thin version of item object
 				JSONObject obj = item.toJSONObject();
+				
+				// Check if this is a favorite one.
+				// This field is required by frontend to correctly display favorite items.
+				obj.put("favorite", favorite.contains(item.getItemId()));
+
 				list.add(obj);
 			}
 		} catch (Exception e) {
